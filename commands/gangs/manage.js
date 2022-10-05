@@ -37,7 +37,7 @@ module.exports = {
         } else if (user.gang.rank != "Owner" && user.gang.rank != "Admin") {
           return message.error("You can't manage the Gang you're in or you're not in a Gang!");
         } else {
-          if (!args[0]) return message.error("You didn't provide a true option. `name, description, color, flag, setadmin, setgangrole, removeadmin, kick, transferownership`")
+          if (!args[0]) return message.error("You didn't provide a true option. `name, description, color, flag, setadmin, setgangrole, removeadmin, kick, invite, transferownership`")
           if (!guild.gangs.get(user.gang.name) && user.gang.name != 'None') {
             guild.gangs.forEach(g => {
               if (g.uuid === user.gang.uuid) user.gang.name = g.name;
@@ -56,7 +56,7 @@ module.exports = {
               guild.gangs.delete(user.gang.name);
               user.gang.name = args[1];
               guild.markModified('gangs');
-              guild.markModified('users');
+              guild.markModified('members');
               guild.save().then(() => message.success(`Gang name has been updated to **${args[1]}** successfully.`)).catch(err => message.channel.send("An error occured: " + err))
               break;
             case "description":
@@ -123,7 +123,7 @@ module.exports = {
                 if (guild.members.get(message.mentions.users.first().id).gang.uuid != gang.uuid) return message.error("This user is not in your gang.");
               }
               usera.gang.rank = "Admin";
-              guild.markModified('users');
+              guild.markModified('members');
               guild.save().then(() => message.success(`User has been set as a Admin successfully.`)).catch(err => message.channel.send("An error occured: " + err))
               break;
             case "removeadmin":
@@ -135,12 +135,12 @@ module.exports = {
               });
               if (!adminlist.includes(message.mentions.users.first().id)) return message.error("This user is not an Admin.");
               adminlist.indexOf(message.mentions.users.first().id) > -1 ? adminlist.splice(admins.indexOf(message.mentions.users.first().id), 1) : null;
-              guild.markModified('users');
+              guild.markModified('members');
               guild.save().then(() => message.success(`User has been removed from Admins successfully.`)).catch(err => message.channel.send("An error occured: " + err))
               break;
             case "kick":
               if (user.gang.rank != "Owner" && user.gang.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
-              if (!message.mentions.users.first()) return message.error("You did not mention a user to remove to kick from the Gang.");
+              if (!message.mentions.users.first()) return message.error("You did not mention a user to kick from the Gang.");
               let userb = guild.members.get(message.mentions.users.first().id);
               if (!userb) {
                 return message.error("This user is not in your gang.");
@@ -153,9 +153,34 @@ module.exports = {
                 rank: null,
                 joinDate: null
               }
-              guild.markModified('users');
+              guild.markModified('members');
               guild.save().then(() => message.success(`User has been kicked from the Gang successfully.`)).catch(err => message.channel.send("An error occured: " + err));
               
+              break;
+            case "invite":
+              if (user.gang.rank != "Owner" && user.gang.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
+              if (!message.mentions.users.first()) return message.error("You did not mention a user to invite to the Gang.");
+              let usere = guild.members.get(message.mentions.users.first().id);
+              if(usere) {
+                if (usere.gang.uuid == gang.uuid) return message.error("This user is already in your gang.");
+                if (usere.gang.name != "None") return message.error("This user is already in a gang.");
+              }
+              let userkey = message.mentions.users.first().id+gang.uuid;
+              for (var i = 0; i < global.gang_invites.length; i++) {
+                if (global.gang_invites[i] === userkey) return message.error("User is already invited.");
+              }    
+              global.gang_invites.push(userkey);
+              // not in any gang
+              message.success("<@" + message.mentions.users.first().id + "> was invited to your gang.");
+              setTimeout(function(){
+                for (var i = 0; i < global.gang_invites.length; i++) {
+                  if (global.gang_invites[i] === userkey) {
+                    global.gang_invites.splice(i, 1);
+                    message.error("User invite timed out.");
+                    break;
+                  }
+                }    
+              }, 60000);
               break;
             case "transferownership":
               if (user.gang.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
@@ -176,7 +201,7 @@ module.exports = {
                     }
                     userc.gang.rank = "Owner";
                     user.gang.rank = "Member";
-                    guild.markModified('users');
+                    guild.markModified('members');
                     guild.markModified('gangs');
                     console.log(gang)
                     guild.save().then(()=> message.success("The gang has been successfully transferred.")).catch(err => message.channel.send("An error occured: " + err));
@@ -187,7 +212,7 @@ module.exports = {
               }
               break;
             default:
-              return message.error("You didn't provide a option. `name, description, color, flag, setadmin, setguildrole, removeadmin, kick, transferownership`");
+              return message.error("You didn't provide a option. `name, description, color, flag, setadmin, setguildrole, removeadmin, kick, invite, transferownership`");
           }
           
         }

@@ -1,6 +1,8 @@
 const Discord = require("discord.js");
 const Guild = require("../../schemas/guild.js");
 
+global.gang_invites = []
+
 module.exports = {
   name: "join",
   category: "Gangs",
@@ -19,6 +21,16 @@ module.exports = {
         if (member) {
           if (member.gang.name != "None") return message.error("You are already in a gang!");
         }
+        let userkey = message.author.id+gang.uuid;
+        let found = false;
+        for (var i = 0; i < global.gang_invites.length; i++) {
+            if (global.gang_invites[i] === userkey) {
+                global.gang_invites.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        if (!found) return message.error("You are not invited to this gang.");
         member = {
           id: message.author.id,
           tag: message.author.tag,

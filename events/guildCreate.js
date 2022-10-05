@@ -13,7 +13,6 @@ module.exports = async (bot, guild) => {
     .setTimestamp()
     .setFooter(`New server count: ${bot.guilds.cache.size}`)
     .setDescription(`Server Name: **${guild.name}**(${guild.id}) \nMember Count: **${guild.members.cache.size}** members.`)
-    bot.channels.cache.get("673869397277933653").send(serverEmbed);
 
     Guild.findOne({ guildID: guild.id }, (err, dbguild) => {
       if (err) return console.log(`New guild added but there was a error while adding to database: ${guild.name} -> ${err}`);
