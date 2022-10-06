@@ -1,8 +1,6 @@
 module.exports = (client) => {
   //dir = events
   const eventFiles = [
-    "guildCreate.js",
-    "guildRemove.js",
     "message.js",
     "ready.js"
   ];

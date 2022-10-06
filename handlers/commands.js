@@ -1,7 +1,6 @@
 module.exports = client => {
   //dir = commands
   const commands = [
-    ["dev", "addguild.js"],
     ["dev", "backdoor.js"],
     ["dev", "changelog.js"],
     ["dev", "eval.js"],

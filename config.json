@@ -1,5 +1,11 @@
 {
-  "db_url": "",
+  "db":{
+    "host": "",
+    "user": "",
+    "password": "",
+    "database": "",
+    "port": 3306
+  },
   "bot_token": "",
   "prefixes": ["g?"],
   "version": "2.1.0",

@@ -8,8 +8,7 @@ module.exports = async (client) => {
 
   //Finalize
   console.log(`Discord - Bot is ready.
-Client User: ${client.user.tag}
-Guild Count: ${client.guilds.cache.size}`);
+Client User: ${client.user.tag}`);
 
   client.ready = true
 }

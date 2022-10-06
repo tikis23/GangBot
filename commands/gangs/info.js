@@ -1,5 +1,5 @@
 const Discord = require("discord.js");
-const Guild = require("../../schemas/guild.js");
+const pool = require("../../db/guild.js");
 const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
