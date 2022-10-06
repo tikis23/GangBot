@@ -1,20 +1,28 @@
-const fs = require("fs");
-
 module.exports = client => {
-  const categories = fs.readdirSync('./commands').filter(file => !file.endsWith('.js'));
-  const misc = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
+  //dir = commands
+  const commands = [
+    ["dev", "addguild.js"],
+    ["dev", "backdoor.js"],
+    ["dev", "changelog.js"],
+    ["dev", "eval.js"],
+    ["dev", "reload.js"],
+    ["dev", "test.js"],
+    ["gangs", "create.js"],
+    ["gangs", "info.js"],
+    ["gangs", "join.js"],
+    ["gangs", "leaderboard.js"],
+    ["gangs", "leave.js"],
+    ["gangs", "list.js"],
+    ["gangs", "manage.js"],
+    ["gangs", "profile.js"],
+    ["gangs", "remove.js"],
+    ["gangs", "setcreator.js"],
+    ["general", "help.js"],
+    ["general", "ping.js"]
+  ];
   //Categories
-  categories.forEach(category => {
-    const commands = fs.readdirSync(`./commands/${category}`).filter(file => file.endsWith('.js'));
-    for (const file of commands) {
-      const command = require(`../commands/${category}/${file}`)
-      client.commands.set(command.name, command);
-    }
-  });
-  //misc
-  misc.forEach(file => {
-    const command = require(`../commands/${file}`)
+  for (const file of commands) {
+    const command = require(`../commands/${file[0]}/${file[1]}`)
     client.commands.set(command.name, command);
-  })
+  }
 }

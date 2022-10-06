@@ -1,5 +1,4 @@
 const Discord = require("discord.js");
-const fs = require('fs');
 
 function prettyString(string) {
  return string.replace(/_/g, " ").replace(/guild/gi, "Server").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
@@ -14,9 +13,6 @@ module.exports = {
   usage: "[command name]",
   cooldown: 5,
   execute(bot, message, args) {
-    const categories = fs.readdirSync('./commands').filter(file => !file.endsWith('.js'));
-    const misc = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
     if (!args[0]) {
 
       let helpEmbed = new Discord.MessageEmbed()
@@ -26,30 +22,36 @@ module.exports = {
       .setFooter("Requested by " + message.author.username, message.author.avatarURL())
       .setColor("BLUE");
 
-      categories.forEach(category => {
-        if (category === "dev") return;
-
-        let helpList = [];
-        const commands = fs.readdirSync(`./commands/${category}`).filter(file => file.endsWith('.js'));
-
-        commands.forEach(command => {
-          command = command.slice(0, command.length-3)
-          if (!bot.commands.get(command).dev && !bot.commands.get(command).unstaged) helpList.push(`\`${command}\``);
-        });
-
-        const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-
-        helpEmbed.addField(categoryName, helpList.join(", "));
+      //dir = commands
+      const commands = [
+        ["dev", "addguild.js"],
+        ["dev", "backdoor.js"],
+        ["dev", "changelog.js"],
+        ["dev", "eval.js"],
+        ["dev", "reload.js"],
+        ["dev", "test.js"],
+        ["gangs", "create.js"],
+        ["gangs", "info.js"],
+        ["gangs", "join.js"],
+        ["gangs", "leaderboard.js"],
+        ["gangs", "leave.js"],
+        ["gangs", "list.js"],
+        ["gangs", "manage.js"],
+        ["gangs", "profile.js"],
+        ["gangs", "remove.js"],
+        ["gangs", "setcreator.js"],
+        ["general", "help.js"],
+        ["general", "ping.js"]
+      ];
+      let helpList = {"dev":[], "gangs":[], "general":[]};
+      commands.forEach(entry => {
+        if (entry[0] === "dev") return;
+        const command = entry[1].slice(0, entry[1].length-3)
+        if (!bot.commands.get(command).dev && !bot.commands.get(command).unstaged) helpList[entry[0]].push(`\`${command}\``);
       });
-
-      if (misc.length < 0) {
-        let miscList = []
-        misc.forEach(c => {
-          if (!bot.commands.get(command).dev && !bot.commands.get(command).unstaged) miscList.push(`\`${command}\``)
-        })
-        helpEmbed.push("Misc.", miscList.join(", "))
-      }
-
+      //helpEmbed.addField("Dev", helpList["dev"].join(", "));
+      helpEmbed.addField("Gangs", helpList["gangs"].join(", "));
+      helpEmbed.addField("General", helpList["general"].join(", "));
       message.channel.send(helpEmbed);
     } else {
 

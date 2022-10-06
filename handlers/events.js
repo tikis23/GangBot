@@ -1,7 +1,11 @@
-const fs = require("fs");
-
 module.exports = (client) => {
-  const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+  //dir = events
+  const eventFiles = [
+    "guildCreate.js",
+    "guildRemove.js",
+    "message.js",
+    "ready.js"
+  ];
   for (let i = 0; i < eventFiles.length; i++) {
     const event = require(`../events/${eventFiles[i]}`);
     const name = eventFiles[i].split(".")[0];

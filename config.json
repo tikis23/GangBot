@@ -1,4 +1,6 @@
 {
+  "db_url": "",
+  "bot_token": "",
   "prefixes": ["g?"],
   "version": "2.1.0",
   "devs": ["520639299079766046"],

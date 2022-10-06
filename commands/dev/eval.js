@@ -1,4 +1,3 @@
-const fs = require('fs');
 const config = require('../../config.json');
 const hastebin = require('hastebin-gen');
 const { inspect } = require("util");
