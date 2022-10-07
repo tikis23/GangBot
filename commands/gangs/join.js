@@ -17,7 +17,7 @@ module.exports = {
         conn = await pool.getConnection();
         member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.author.id]);
         member = member[0];
-        gangs = await conn.query("SELECT name, ownerid FROM gangbot_gangs");
+        gangs = await conn.query("SELECT uuid, name, ownerid FROM gangbot_gangs");
       } finally {
         if (conn) conn.release(); //release to pool
 

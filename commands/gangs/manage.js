@@ -272,11 +272,9 @@ module.exports = {
                         gang.ownerid = message.mentions.users.first().id;
                         target.rank = "Owner";
                         user.rank = "Member";
-                        let ret = await conn.query("UPDATE gangbot_members SET `rank` = ?, WHERE id = ?", [target.rank, target.id]);
-                        ret = await conn.query("UPDATE gangbot_members SET `rank` = ?, WHERE id = ?", [user.rank, user.id]);
+                        let ret = await conn.query("UPDATE gangbot_members SET `rank` = ? WHERE id = ?", [target.rank, target.id]);
+                        ret = await conn.query("UPDATE gangbot_members SET `rank` = ? WHERE id = ?", [user.rank, user.id]);
                         ret = await conn.query("UPDATE gangbot_gangs SET ownertag = ?, owneravatar = ?, ownerid = ? WHERE uuid = ?", [gang.ownertag, gang.owneravatar, gang.ownerid, gang.uuid]);
- 
-                        guild.save().then(()=> message.success("The gang has been successfully transferred.")).catch(err => message.channel.send("An error occured: " + err));
                       } else {
                         return message.error("Command cancelled.");
                       }
