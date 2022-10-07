@@ -19,9 +19,13 @@ module.exports = {
         settings = await conn.query("SELECT * FROM gangbot_settings");
         settings = settings[0];
         if (!settings) return message.error("There was an error, please contact the server owner.");
-        settings.create_roles = JSON.parse(settings.create_roles);
+        if (settings.create_roles != "") {
+          settings.create_roles = JSON.parse(settings.create_roles);
+        } else {
+          settings.create_roles = []
+        }
 
-        member = await conn.query("SELECT * FROM gangbot_members WHERE id = (?)", [message.author.id]);
+        member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.author.id]);
         member = member[0];
         gangs = await conn.query("SELECT name FROM gangbot_gangs");
       } finally {
@@ -120,7 +124,7 @@ module.exports = {
                     uuid: uuid,
                     name: newGang.name,
                     rank: "Owner",
-                    joinDate: Date.now()
+                    joinDate: new Date()
                   }
                 };
                 // save
@@ -151,7 +155,7 @@ module.exports = {
             if (!message.member.roles.cache.get(role)) missing.push(`<@&${message.guild.roles.cache.get(role).id}>`)
           }
         })
-        if (missing.length > 0) return message.error("You don't have the required role(s) to create a gang! Missing role(s): " + missing.join(`, `), true)
+        if (missing.length >= settings.create_roles.length) return message.error("You don't have the required role(s) to create a gang! Missing role(s): " + missing.join(`, `), true)
 
         let collector = message.channel.createMessageCollector(m => m.author.id === message.author.id, { time: 600000 })
         let msg = await message.channel.send("Gang creator started! What should be the gang's name? (case sensitive)\nType in \`cancel\` anytime to exit the creator.");
@@ -246,7 +250,7 @@ module.exports = {
                   try {
                     conn = await pool.getConnection();
 
-                    let member = await conn.query("SELECT * FROM gangbot_members WHERE id = (?)", [user.id]);
+                    let member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [user.id]);
                     member = member[0];
                     if (member) {
                       if (member.gangname != "None" || (function(){
@@ -271,7 +275,7 @@ module.exports = {
                         uuid: uuid,
                         name: newGang.name,
                         rank: "Owner",
-                        joinDate: Date.now(),
+                        joinDate: new Date()
                       }
                     }
 
@@ -389,7 +393,7 @@ module.exports = {
                   try {
                     conn = await pool.getConnection();
 
-                    let member = await conn.query("SELECT * FROM gangbot_members WHERE id = (?)", [user.id]);
+                    let member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [user.id]);
                     member = member[0];
                     if (member) {
                       if (member.gangname != "None" || (function(){
@@ -414,7 +418,7 @@ module.exports = {
                         uuid: uuid,
                         name: newGang.name,
                         rank: "Owner",
-                        joinDate: Date.now(),
+                        joinDate: new Date()
                       }
                     }
 

@@ -10,34 +10,73 @@ module.exports = {
   cooldown: 5,
   reqPermissions: ['ADMINISTRATOR'],
   execute(bot, message, args) {
-    Guild.findOne({ guildID: message.guild.id }, async (err, guild) => {
-      if (err) return message.channel.send("An error occured: " + err);
-      if (!guild) return message.channel.send("Database does not exist! Please contract a dev.");
-      if (guild) {
+
+    (async () =>{
+      let conn, settings;
+      try {
+        conn = await pool.getConnection();
+        settings = await conn.query("SELECT * FROM gangbot_settings");
+        settings = settings[0];
+        if (!settings) return message.error("There was an error, please contact the server owner.");
+        if (settings.create_roles != "") {
+          settings.create_roles = JSON.parse(settings.create_roles);
+        } else {
+          settings.create_roles = []
+        }
+      } finally {
+        if (conn) conn.release(); //release to pool
+
         if (!args[0]) return message.error("You didn't provide a option to set as usability.", true, `<everyone/roles/owner>`);
         switch (args[0].toLowerCase()) {
           case "everyone":
-          guild.settings.create.allow = 'everyone';
-          guild.save().then(() => message.success("Gang creator usability is successfull set for everyone to use.")).catch(err => console.log('An error occured: ' + err));
+            settings.create_allow = 'everyone';
+            // save
+            (async () =>{
+              try {
+                conn = await pool.getConnection();
+                let ret = await conn.query("UPDATE gangbot_settings SET create_allow = ?, create_roles = ?", [settings.create_allow, ""]);
+                message.success("Gang creator usability is successfully set for everyone to use.")
+              } finally {
+                if (conn) conn.release(); //release to pool
+              }
+            })();
             break;
           case "owner":
-          guild.settings.create.allow = 'owner';
-          guild.save().then(() => message.success("Gang creator usability is successfull set for only owner of this server to use.")).catch(err => console.log('An error occured: ' + err));
+            settings.create_allow = 'owner';
+            // save
+            (async () =>{
+              try {
+                conn = await pool.getConnection();
+                let ret = await conn.query("UPDATE gangbot_settings SET create_allow = ?, create_roles = ?", [settings.create_allow, ""]);
+                message.success("Gang creator usability is successfully set for only owner of this server to use.")
+              } finally {
+                if (conn) conn.release(); //release to pool
+              }
+            })();
             break;
           case "roles":
-          if (!args[1]) return message.error("You didn't mention or provide any roles required to be able to use gang creator.");
-          if (message.mentions.roles.size = 0) return message.error("You didn't mention or provide any roles required to be able to use gang creator.");
-          guild.settings.create.allow = 'roles';
-          let roles = []
-          message.mentions.roles.forEach(r => roles.push(r.id));
-          guild.settings.create.roles = roles
-          guild.save().then(() => message.success("Gang creator usability is successfull set for the roles you provided to use.")).catch(err => console.log('An error occured: ' + err));
+            if (!args[1]) return message.error("You didn't mention or provide any roles required to be able to use gang creator.");
+            if (message.mentions.roles.size = 0) return message.error("You didn't mention or provide any roles required to be able to use gang creator.");
+            settings.create_allow = 'roles';
+            let roles = []
+            message.mentions.roles.forEach(r => roles.push(r.id));
+            settings.create_roles = JSON.stringify(roles);
+            // save
+            (async () =>{
+              try {
+                conn = await pool.getConnection();
+                let ret = await conn.query("UPDATE gangbot_settings SET create_allow = ?, create_roles = ?", [settings.create_allow, settings.create_roles]);
+                message.success("Gang creator usability is successfully set for the roles you provided to use.")
+              } finally {
+                if (conn) conn.release(); //release to pool
+              }
+            })();
             break;
           default:
             return message.error("You didn't provide a option to set as usability.", true, `<everyone/roles/owner>`);
             break;
         }
       }
-    });
+    })();
   }
 };

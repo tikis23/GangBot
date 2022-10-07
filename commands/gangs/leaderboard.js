@@ -10,18 +10,22 @@ module.exports = {
   cooldown: 5,
   guildOnly: true,
   execute(bot, message, args) {
-    Guild.findOne({ guildID: message.guild.id }, (err, guild) => {
-      if (err) return message.channel.send("An error occured: " + err)
-      if (!guild) return message.channel.send("Database does not exist! Please contract a dev.");
-      if (guild) {
+    (async () =>{
+      let conn, members, gangs;
+      try {
+        conn = await pool.getConnection();
+        members = await conn.query("SELECT ganguuid FROM gangbot_members");
+        gangs = await conn.query("SELECT name, uuid FROM gangbot_gangs");
+      } finally {
+        if (conn) conn.release(); //release to pool
 
         let top = [];
-        guild.gangs.forEach(gang => {
-          let members = 0;
-          guild.members.forEach(m => {
-            if (m.gang.uuid == gang.uuid) members++;
+        gangs.forEach(gang => {
+          let membercount = 0;
+          members.forEach(m => {
+            if (m.ganguuid == gang.uuid) membercount++;
           });
-          top.push({gang: gang, members: members, points: gang.points});
+          top.push({gang: gang, members: membercount, points: gang.points});
         });
 
         top.sort((a, b) => b.members - a.members);
@@ -40,6 +44,6 @@ module.exports = {
         .setDescription(lb.length > 0 ? lb : "No Gangs.")
         message.channel.send(listEmbed)
       }
-    })
+    })();
   }
 };

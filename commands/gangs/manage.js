@@ -15,208 +15,283 @@ module.exports = {
   guildOnly: true,
   execute(bot, message, args) {
     let gangName = args.join(" ");
-    Guild.findOne({ guildID: message.guild.id }, async (err, guild) => {
-      if (err) return message.channel.send("An error occured: " + err);
-      if (!guild) return message.channel.send("Database does not exist! Please contract a dev.");
-      if (guild) {
-        let user = guild.members.get(message.author.id)
+    (async () =>{
+      let conn, member, members, gangs;
+      try {
+        conn = await pool.getConnection();
+        gangs = await conn.query("SELECT name, uuid, ownerid FROM gangbot_gangs");
+        member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.author.id]);
+        member = member[0];
+        members = await conn.query("SELECT id, ganguuid, `rank` FROM gangbot_members");
+      } finally {
+        if (conn) conn.release(); //release to pool
+
+        let user = member
         if (!user) {
           user = {
             id: message.author.id,
             tag: message.author.tag,
-            gang: {
-              uuid: '',
-              name: "None",
-              rank: null,
-              joinDate: null
-            }
+            ganguuid: '',
+            gangname: "None",
+            rank: null,
+            joinDate: null
           }
-          guild.members.set(message.author.id, user);
-          guild.save()
           return message.error("You dont own or moderate a Gang!");
-        } else if (user.gang.rank != "Owner" && user.gang.rank != "Admin") {
+        } else if (user.rank != "Owner" && user.rank != "Admin") {
           return message.error("You can't manage the Gang you're in or you're not in a Gang!");
         } else {
-          if (!args[0]) return message.error("You didn't provide a true option. `name, description, color, flag, setadmin, setgangrole, removeadmin, kick, invite, transferownership`")
-          if (!guild.gangs.get(user.gang.name) && user.gang.name != 'None') {
-            guild.gangs.forEach(g => {
-              if (g.uuid === user.gang.uuid) user.gang.name = g.name;
-            });
-            guild.markModified('members');
+          if (!args[0]) return message.error("You didn't provide a true option. `name, description, color, banner, setadmin, removeadmin, kick, invite, transferownership`")
+          if (user.gangname != 'None' && !(function(){
+            for (let i = 0; i < gangs.length; i++) {if (gangs[i].name === gangName) return true;}
+            return false;})()) {
+            for (let i = 0; i < gangs.length; i++) {
+              if (gangs[i].uuid === user.ganguuid) {
+                user.gangname = gangs[i].name;
+                break;
+              }
+            }
           }
-          let gang = guild.gangs.get(user.gang.name);
+          let gang = (function(){for (let i = 0; i < gangs.length; i++) {if (gangs[i].name === user.gangname) return gangs[i];}
+          return null;})();
           let admins = []
           switch (args[0].toLowerCase()) {
             case "name":
               if (!args[1]) return message.error("The gang name should be between 0 and 32 characters.\nWarning, this is capital sensitive.");
               if (args[1] == gang.name) return message.error("This is the same name as the old one! Try a new one.")
               if (args[1].length > 32 || args[1].length < 3 || args[1].includes('\n')) return message.error("The gang name should be between 0 and 32 characters and should not include new lines.\nWarning, this is capital sensitive.");
-              gang.name = args[1];
-              guild.gangs.set(args[1], gang);
-              guild.gangs.delete(user.gang.name);
-              user.gang.name = args[1];
-              guild.markModified('gangs');
-              guild.markModified('members');
-              guild.save().then(() => message.success(`Gang name has been updated to **${args[1]}** successfully.`)).catch(err => message.channel.send("An error occured: " + err))
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let ret = await conn.query("UPDATE gangbot_gangs SET name = ? WHERE uuid = ?", [args[1], gang.uuid]);
+                  ret = await conn.query("UPDATE gangbot_members SET gangname = ? WHERE gangname = ?", [args[1], gang.name]);
+                  message.success(`Gang name has been updated to **${args[1]}** successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();
               break;
             case "description":
               args.shift();
-              let desc = args.join();
+              let desc = args.join(" ");
               if (desc.length == 0 || desc.length > 4000) return message.error("The gang description should be between 0 and 4000 characters.");
-              gang.description = desc;
-              guild.markModified('gangs');
-              guild.save().then(() => message.success(`Gang description has been updated successfully.`)).catch(err => message.channel.send("An error occured: " + err))
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let ret = await conn.query("UPDATE gangbot_gangs SET description = ? WHERE uuid = ?", [desc, gang.uuid]);
+                  message.success(`Gang description has been updated successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();
               break;
             case "color":
               if (!args[1]) return message.error("You didn't provide a hex color for the guild.");
               if (!w3color(args[1]).valid) return message.error("This is not a valid color. Please provide a hex color for the guild.");
-              gang.color = args[1];
-              guild.markModified('gangs');
-              guild.save().then(() => message.success(`Gang color has been updated to **${args[1]}** successfully.`)).catch(err => message.channel.send("An error occured: " + err))
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let ret = await conn.query("UPDATE gangbot_gangs SET color = ? WHERE uuid = ?", [args[1], gang.uuid]);
+                  message.success(`Gang color has been updated to **${args[1]}** successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();
               break;
             case "banner":
               if (args[1]) {
                 if (args[1].toLowerCase() == 'clear') {
                   gang.banner = null;
-                  guild.markModified('gangs');
-                  await guild.save().then(() => message.success(`Gang banner has been cleared successfully.`)).catch(err => message.error("An error occured while saving the database: " + err));
+                  // save
+                  (async () => {
+                    try {
+                      conn = await pool.getConnection();
+                      let ret = await conn.query("UPDATE gangbot_gangs SET banner = ? WHERE uuid = ?", [gang.banner, gang.uuid]);
+                      message.success(`Gang banner has been cleared successfully.`)
+                    } finally {
+                      if (conn) conn.release(); //release to pool
+                    }
+                  })();
                 } else return message.error(`You didn't provide a image for the guild, please attach a image with your message. If you wish to remove your banner please use \`${message.prefix}manage banner clear\` command.`);
               } else {
-                if (message.attachments.size = 0) return message.error(`You didn't provide a image for the guild, please attach a image with your message. If you wish to remove your banner please use \`${message.prefix}manage banner clear\` command.`);
+                if (message.attachments.size == 0) return message.error(`You didn't provide a image for the guild, please attach a image with your message. If you wish to remove your banner please use \`${message.prefix}manage banner clear\` command.`);
                 gang.banner = message.attachments.first().proxyURL;
-                guild.markModified('gangs');
-                guild.save(() => message.success(`Gang banner has been updated to the image you attached successfully.`)).catch(err => message.channel.send("An error occured: " + err))
-              }
-              break;
-            case "setgangrole":
-              if (!message.author.permissions.has("MANAGE_ROLES")) return message.error("You don't have the right permission to manage roles of this gang.");
-              if (!args[1] || !message.mentions.roles.first()) return message.error("You didn't provide a role for the gang.");
-              if (message.mentions.roles.first().position >= message.author.roles.highest.position) return message.error("Your highest role is not enough to set this role as this gang's role.")
-              if (!message.mentions.roles.first()) return message.error("This role doesn't exist in this server.");
-              if (args[1] == '@everyone') return message.error("You can't set the role to everyone.");
-              if (args[1].toLowerCase() == 'none') {
-                gang.role = "";
-                guild.markModified('gangs');
-                guild.save().then(() => message.success(`Gang role has been cleared successfully.`)).catch(err => message.channel.send("An error occured: " + err))
-              } else {
-                let role = message.mentions.roles.first();
-                if (role.position > message.guild.me.roles.highest.position) return message.error("The role you provided is higher than my highest role.");
-                gang.role = role.id;
-                guild.markModified('gangs');
-                guild.save().then(() => message.success(`Gang role has been updated to **${role.name}** successfully.`)).catch(err => message.channel.send("An error occured: " + err));
+                // save
+                (async () => {
+                  try {
+                    conn = await pool.getConnection();
+                    let ret = await conn.query("UPDATE gangbot_gangs SET banner = ? WHERE uuid = ?", [gang.banner, gang.uuid]);
+                    message.success(`Gang banner has been updated to the image you attached successfully.`)
+                  } finally {
+                    if (conn) conn.release(); //release to pool
+                  }
+                })();
               }
               break;
             case "setadmin":
-              if (user.gang.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
+              if (user.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
               if (!message.mentions.users.first()) return message.error("You did not mention a user to set as Admin.");
               let admins = [];
-              guild.members.forEach(m => {
-                if (gang.uuid == m.gang.uuid && m.gang.rank == "Admin") admins.push(m.id);
+              members.forEach(m => {
+                if (gang.uuid == m.ganguuid && m.rank == "Admin") admins.push(m.id);
               });
               if (admins.size == 6) return message.error("You can only have 6 admins at a time in your gang.");
               if (message.mentions.users.first().id == message.author.id) return message.error("You can't be Admin! You're already the Owner.");
               if (admins.includes(message.mentions.users.first().id)) return message.error("This user is already an Admin.");
-              let usera = guild.members.get(message.mentions.users.first().id);
-              if (!usera) {
-                return message.error("This user is not in your gang.");
-              } else {
-                if (guild.members.get(message.mentions.users.first().id).gang.uuid != gang.uuid) return message.error("This user is not in your gang.");
-              }
-              usera.gang.rank = "Admin";
-              guild.markModified('members');
-              guild.save().then(() => message.success(`User has been set as a Admin successfully.`)).catch(err => message.channel.send("An error occured: " + err))
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let target = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.mentions.users.first().id]);
+                  target = target[0];
+                  if (!target) {
+                    return message.error("This user is not in your gang.");
+                  } else {
+                    if (target.ganguuid != gang.uuid) return message.error("This user is not in your gang.");
+                  }
+                  target.rank = "Admin";
+                  let ret = await conn.query("UPDATE gangbot_members SET `rank` = ? WHERE id = ?", [target.rank, target.id]);
+                  message.success(`User has been set as a Admin successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();
               break;
             case "removeadmin":
-              if (user.gang.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
+              if (user.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
               if (!message.mentions.users.first()) return message.error("You did not mention a user to remove their Admin.");
               let adminlist = [];
-              guild.members.forEach(m => {
-                if (gang.uuid == m.gang.uuid && m.gang.rank == "Admin") adminlist.push(m.id);
+              members.forEach(m => {
+                if (gang.uuid == m.ganguuid && m.rank == "Admin") admins.push(m.id);
               });
               if (!adminlist.includes(message.mentions.users.first().id)) return message.error("This user is not an Admin.");
-              adminlist.indexOf(message.mentions.users.first().id) > -1 ? adminlist.splice(admins.indexOf(message.mentions.users.first().id), 1) : null;
-              guild.markModified('members');
-              guild.save().then(() => message.success(`User has been removed from Admins successfully.`)).catch(err => message.channel.send("An error occured: " + err))
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let target = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.mentions.users.first().id]);
+                  target = target[0];
+                  if (!target) {
+                    return message.error("This user is not in your gang.");
+                  } else {
+                    if (target.ganguuid != gang.uuid) return message.error("This user is not in your gang.");
+                  }
+                  target.rank = "Member";
+                  let ret = await conn.query("UPDATE gangbot_members SET `rank` = ? WHERE id = ?", [target.rank, target.id]);
+                  message.success(`User has been removed from Admins successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();
               break;
             case "kick":
-              if (user.gang.rank != "Owner" && user.gang.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
+              if (user.rank != "Owner" && user.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
               if (!message.mentions.users.first()) return message.error("You did not mention a user to kick from the Gang.");
-              let userb = guild.members.get(message.mentions.users.first().id);
-              if (!userb) {
-                return message.error("This user is not in your gang.");
-              } else {
-                if (guild.members.get(message.mentions.users.first().id).gang.uuid != gang.uuid) return message.error("This user is not in your gang.");
-              }
-              userb.gang = {
-                uuid: '',
-                name: "None",
-                rank: null,
-                joinDate: null
-              }
-              guild.markModified('members');
-              guild.save().then(() => message.success(`User has been kicked from the Gang successfully.`)).catch(err => message.channel.send("An error occured: " + err));
-              
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let target = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.mentions.users.first().id]);
+                  target = target[0];
+                  if (!target) {
+                    return message.error("This user is not in your gang.");
+                  } else {
+                    if (target.ganguuid != gang.uuid) return message.error("This user is not in your gang.");
+                  }
+                  target.ganguuid = "";
+                  target.gangname = "None";
+                  target.rank = null;
+                  target.joinDate = null;
+                  let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE id = ?", [target.ganguuid, target.gangname, target.rank, target.joinDate, target.id]);
+                  message.success(`User has been kicked from the Gang successfully.`)
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();             
               break;
             case "invite":
-              if (user.gang.rank != "Owner" && user.gang.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
+              if (user.rank != "Owner" && user.rank != "Admin") return message.error("Only Owner or Admin of the Gang can manage this.");
               if (!message.mentions.users.first()) return message.error("You did not mention a user to invite to the Gang.");
-              let usere = guild.members.get(message.mentions.users.first().id);
-              if(usere) {
-                if (usere.gang.uuid == gang.uuid) return message.error("This user is already in your gang.");
-                if (usere.gang.name != "None") return message.error("This user is already in a gang.");
-              }
-              let userkey = message.mentions.users.first().id+gang.uuid;
-              for (var i = 0; i < global.gang_invites.length; i++) {
-                if (global.gang_invites[i] === userkey) return message.error("User is already invited.");
-              }    
-              global.gang_invites.push(userkey);
-              // not in any gang
-              message.success("<@" + message.mentions.users.first().id + "> was invited to your gang.");
-              setTimeout(function(){
-                for (var i = 0; i < global.gang_invites.length; i++) {
-                  if (global.gang_invites[i] === userkey) {
-                    global.gang_invites.splice(i, 1);
-                    message.error("User invite timed out.");
-                    break;
+              // check if in gang
+              (async () => {
+                let invitetarget;
+                try {
+                  conn = await pool.getConnection();
+                  invitetarget = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.mentions.users.first().id]);
+                  invitetarget = invitetarget[0];
+                } finally {
+                  if (conn) conn.release(); //release to pool
+
+                  if(invitetarget) {
+                    if (invitetarget.ganguuid == gang.uuid) return message.error("This user is already in your gang.");
+                    if (invitetarget.gangname != "None") return message.error("This user is already in a gang.");
                   }
-                }    
-              }, 60000);
+                  let userkey = message.mentions.users.first().id+gang.uuid;
+                  for (var i = 0; i < global.gang_invites.length; i++) {
+                    if (global.gang_invites[i] === userkey) return message.error("User is already invited.");
+                  }    
+                  global.gang_invites.push(userkey);
+                  // not in any gang
+                  message.success("<@" + message.mentions.users.first().id + "> was invited to your gang.");
+                  setTimeout(function(){
+                    for (var i = 0; i < global.gang_invites.length; i++) {
+                      if (global.gang_invites[i] === userkey) {
+                        global.gang_invites.splice(i, 1);
+                        message.error("User invite timed out.");
+                        break;
+                      }
+                    }    
+                  }, 60000);
+                }
+              })();  
               break;
             case "transferownership":
-              if (user.gang.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
+              if (user.rank != "Owner") return message.error("Only Owner of the gang can manage this.");
               if (!message.mentions.users.first()) return message.error("You did not mention the user to transfer the Gang to.");
-              let userc = guild.members.get(message.mentions.users.first().id);
-              if (userc.gang.rank == "Owner") {
-                return message.error("This user is already a Gang owner");
-              } else if (userc.gang.uuid != guild.gangs.get(user.gang.name).uuid) {
-                return message.error("This user is not in your Gang.");
-              } else {
-                let confirm = await message.channel.send(`<:warning:724052384031965284> | Do you really wish to transfer **${gang.name}** to ${userc.tag}? (yes/no)`);
-                confirm.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 60000, errors: ['time']}).then(async c => {
-                  if (c.first().content.toLowerCase() == "yes" || c.first().content.toLowerCase() == "y") {
-                    gang.owner = {
-                      tag: message.mentions.users.first().tag,
-                      avatar: message.mentions.users.first().avatarURL(),
-                      id: message.mentions.users.first().id
-                    }
-                    userc.gang.rank = "Owner";
-                    user.gang.rank = "Member";
-                    guild.markModified('members');
-                    guild.markModified('gangs');
-                    console.log(gang)
-                    guild.save().then(()=> message.success("The gang has been successfully transferred.")).catch(err => message.channel.send("An error occured: " + err));
-                  } else {
-                    return message.error("Command cancelled.");
+              // save
+              (async () => {
+                try {
+                  conn = await pool.getConnection();
+                  let target = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.mentions.users.first().id]);
+                  target = target[0];
+                  if (!target) {
+                    return message.error("This user is not in your Gang.");
                   }
-                });
-              }
+                  if (target.rank == "Owner") {
+                    return message.error("This user is already a Gang owner");
+                  } else if (target.ganguuid != gang.uuid) {
+                    return message.error("This user is not in your Gang.");
+                  } else {
+                    let confirm = await message.channel.send(`<:warning:724052384031965284> | Do you really wish to transfer **${gang.name}** to ${target.tag}? (yes/no)`);
+                    confirm.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 60000, errors: ['time']}).then(async c => {
+                      if (c.first().content.toLowerCase() == "yes" || c.first().content.toLowerCase() == "y") {
+                        gang.ownertag = message.mentions.users.first().tag;
+                        gang.owneravatar = message.mentions.users.first().avatarURL();
+                        gang.ownerid = message.mentions.users.first().id;
+                        target.rank = "Owner";
+                        user.rank = "Member";
+                        let ret = await conn.query("UPDATE gangbot_members SET `rank` = ?, WHERE id = ?", [target.rank, target.id]);
+                        ret = await conn.query("UPDATE gangbot_members SET `rank` = ?, WHERE id = ?", [user.rank, user.id]);
+                        ret = await conn.query("UPDATE gangbot_gangs SET ownertag = ?, owneravatar = ?, ownerid = ? WHERE uuid = ?", [gang.ownertag, gang.owneravatar, gang.ownerid, gang.uuid]);
+ 
+                        guild.save().then(()=> message.success("The gang has been successfully transferred.")).catch(err => message.channel.send("An error occured: " + err));
+                      } else {
+                        return message.error("Command cancelled.");
+                      }
+                    });
+                  }
+                } finally {
+                  if (conn) conn.release(); //release to pool
+                }
+              })();             
               break;
             default:
-              return message.error("You didn't provide a option. `name, description, color, flag, setadmin, setguildrole, removeadmin, kick, invite, transferownership`");
+              return message.error("You didn't provide a option. `name, description, color, banner, setadmin, removeadmin, kick, invite, transferownership`");
           }
-          
         }
       }
-          });
+    })();
   }
 };

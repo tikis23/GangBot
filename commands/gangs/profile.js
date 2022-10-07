@@ -11,11 +11,11 @@ module.exports = {
   cooldown: 5,
   guildOnly: true,
   execute(bot, message, args) {
-    Guild.findOne({ guildID: message.guild.id }, async (err, guild) => {
-      if (err) return message.channel.send("An error occured: " + err)
-      if (!guild) return message.channel.send("Database does not exist! Please contract a dev.");
-      if (guild) {
-        let user,member;
+    (async () =>{
+      let conn, user, member, gangs;
+      try {
+        conn = await pool.getConnection();
+
         if (args[0]) {
           user = await find.guildMember(bot, message, args.join(" "));
           if (!user) return message.error("You didnt provide a true member.", true, "<username/user ID/mention>");
@@ -23,46 +23,62 @@ module.exports = {
         } else {
           user = message.author
         }
-        member = guild.members.get(user.id);
+
+        member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [user.id]);
+        member = member[0];
+        gangs = await conn.query("SELECT name, uuid FROM gangbot_gangs");
+      } finally {
+        if (conn) conn.release(); //release to pool
 
         if (!member) {
           member = {
             id: message.author.id,
             tag: message.author.tag,
-            gang: {
-              name: "None",
-              uuid: "",
-              rank: null,
-              joinDate: null
-            }
-          }
-          guild.markModified('members');
-        }
-
-        let gangName = member.gang.name;
-        if (!guild.gangs.get(gangName) && gangName != 'None') {
-          guild.gangs.forEach(g => {
-            if (g.uuid === member.gang.uuid) member.gang.name = g.name;
-          });
-          guild.markModified('members');
-        } else if (guild.gangs.get(gangName) && guild.gangs.get(gangName).uuid != member.gang.uuid) {
-          member.gang = {
-            name: "None",
-            uuid: "",
+            gangname: "None",
+            ganguuid: "",
             rank: null,
-            joinDate: null
+            joindate: null
           }
-          guild.markModified('members');
         }
-
-        guild.save().catch(err => message.channel.send("An error occured: " + err));
-
+        let saveMember = false;
+        let gangName = member.gangname;
+        if (gangName != 'None' && !(function(){
+          for (let i = 0; i < gangs.length; i++) {if (gangs[i].name === gangName) return true;}
+          return false;})()) {
+            for (let i = 0; i < gangs.length; i++) {
+              if (gangs[i].uuid === member.ganguuid) {
+                member.gangname = gangs[i].name;
+                saveMember = true;
+                break;
+              }
+            }
+        } else {
+          let tempgang = (function(){for (let i = 0; i < gangs.length; i++) {if (gangs[i].name === gangName) return gangs[i];}
+            return null;})();
+          if (tempgang && tempgang.uuid != member.ganguuid) {
+            member.gangname = "None";
+            member.ganguuid = "";
+            member.rank = null;
+            member.joindate = null;
+            saveMember = true;
+          }
+        }
+        if (saveMember) {
+          (async () =>{
+            try {
+              conn = await pool.getConnection();
+              let ret = await conn.query("INSERT INTO gangbot_members values (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, tag = ?, ganguuid = ?, gangname = ?, `rank` = ?, joindate = ?", [member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate, member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate]);
+            } finally {
+              if (conn) conn.release(); //release to pool
+            }
+          })();
+        }
         message.channel.send(new Discord.MessageEmbed()
         .setAuthor(user.tag, user.avatarURL())
-        .setDescription(`:fleur_de_lis: **Gang Name**: ${member.gang.name}\n:clock10: **Join Date**: ${member.gang.joinDate ? new Date(member.gang.joinDate).toUTCString() : "-"}\n:star: **Gang Rank**: ${member.gang.rank ? member.gang.rank : "-"}`)
+        .setDescription(`:fleur_de_lis: **Gang Name**: ${member.gangname}\n:clock10: **Join Date**: ${member.joindate ? member.joindate : "-"}\n:star: **Gang Rank**: ${member.rank ? member.rank : "-"}`)
         .setColor("GOLD")
         .setTimestamp());
       }
-    });
+    })();
   }
 };

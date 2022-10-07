@@ -9,13 +9,17 @@ module.exports = {
   cooldown: 5,
   guildOnly: true,
   execute(bot, message, args) {
-    Guild.findOne({ guildID: message.guild.id }, (err, guild) => {
-      if (err) return message.channel.send("An error occured: " + err)
-      if (!guild) return message.channel.send("Database does not exist! Please contract a dev.");
-      if (guild) {
-        let list = ""
-        guild.gangs.forEach(gang => {
-          list += `**- ${gang.name}** >> Owner <@${gang.owner.id}>\n`
+    (async () =>{
+      let conn, gangs;
+      try {
+        conn = await pool.getConnection();
+        gangs = await conn.query("SELECT name, ownerid FROM gangbot_gangs");
+      } finally {
+        if (conn) conn.release(); //release to pool
+
+        let list = "";
+        gangs.forEach(gang => {
+          list += `**- ${gang.name}** >> Owner <@${gang.ownerid}>\n`
         })
 
         const listEmbed = new Discord.MessageEmbed()
@@ -26,6 +30,6 @@ module.exports = {
         .setDescription(list.length > 0 ? list : "No Gangs")
         message.channel.send(listEmbed)
       }
-    })
+    })();
   }
 };
