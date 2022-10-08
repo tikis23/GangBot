@@ -55,7 +55,7 @@ module.exports = {
     } else {
 
       let command = bot.commands.get(args[0].toLowerCase())
-      if (!command) return message.channel.send(`<:cross:724049024943915209> | There's no such a command like that, to see the full command list please use \`${message.prefix}commands\` command. `);
+      if (!command) return message.channel.send(`:x: | There's no such a command like that, to see the full command list please use \`${message.prefix}commands\` command. `);
 
       let perms = []
       if (command.reqPermissions) {

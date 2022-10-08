@@ -137,7 +137,7 @@ module.exports = {
 
                     message.guild.roles.create({
                       data: {
-                        name: newGang.name,
+                        name: newGang.name + " gang",
                         color: newGang.color,
                       },
                       reason: 'GangBot role',
@@ -295,7 +295,7 @@ module.exports = {
 
                     message.guild.roles.create({
                       data: {
-                        name: newGang.name,
+                        name: newGang.name + " gang",
                         color: newGang.color,
                       },
                       reason: 'GangBot role',
@@ -446,7 +446,7 @@ module.exports = {
 
                     message.guild.roles.create({
                       data: {
-                        name: newGang.name,
+                        name: newGang.name + " gang",
                         color: newGang.color,
                       },
                       reason: 'GangBot role',

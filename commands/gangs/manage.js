@@ -66,6 +66,8 @@ module.exports = {
                   let ret = await conn.query("UPDATE gangbot_gangs SET name = ? WHERE uuid = ?", [args[1], gang.uuid]);
                   ret = await conn.query("UPDATE gangbot_members SET gangname = ? WHERE gangname = ?", [args[1], gang.name]);
                   message.success(`Gang name has been updated to **${args[1]}** successfully.`)
+                  let role = message.guild.roles.cache.find(role => role.name === gang.name + " gang");
+                  if (role) role.edit({name: args[1] + " gang"});
                 } finally {
                   if (conn) conn.release(); //release to pool
                 }
@@ -95,6 +97,8 @@ module.exports = {
                   conn = await pool.getConnection();
                   let ret = await conn.query("UPDATE gangbot_gangs SET color = ? WHERE uuid = ?", [args[1], gang.uuid]);
                   message.success(`Gang color has been updated to **${args[1]}** successfully.`)
+                  let role = message.guild.roles.cache.find(role => role.name === gang.name + " gang");
+                  if (role) role.edit({color: args[1]});
                 } finally {
                   if (conn) conn.release(); //release to pool
                 }
@@ -200,13 +204,16 @@ module.exports = {
                   } else {
                     if (target.ganguuid != gang.uuid) return message.error("This user is not in your gang.");
                   }
+                  if (target.id == user.id) return message.error("You cannot kick yourself.");
+                  if (target.rank == "Owner") return message.error("You cannot kick the owner.");
+                  if (user.rank == "Admin" && target.rank == "Admin") return message.error("You cannot kick another admin.");
                   target.ganguuid = "";
                   target.gangname = "None";
                   target.rank = null;
                   target.joinDate = null;
                   let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE id = ?", [target.ganguuid, target.gangname, target.rank, target.joinDate, target.id]);
                   message.success(`User has been kicked from the Gang successfully.`)
-                  let role = message.guild.roles.cache.find(role => role.name === gang.name);
+                  let role = message.guild.roles.cache.find(role => role.name === gang.name + " gang");
                   if (role) message.mentions.members.first().roles.remove(role);
                 } finally {
                   if (conn) conn.release(); //release to pool
@@ -266,7 +273,7 @@ module.exports = {
                   } else if (target.ganguuid != gang.uuid) {
                     return message.error("This user is not in your Gang.");
                   } else {
-                    let confirm = await message.channel.send(`<:warning:724052384031965284> | Do you really wish to transfer **${gang.name}** to ${target.tag}? (yes/no)`);
+                    let confirm = await message.channel.send(`:warning: | Do you really wish to transfer **${gang.name}** to ${target.tag}? (yes/no)`);
                     confirm.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 60000, errors: ['time']}).then(async c => {
                       if (c.first().content.toLowerCase() == "yes" || c.first().content.toLowerCase() == "y") {
                         gang.ownertag = message.mentions.users.first().tag;

@@ -48,7 +48,7 @@ module.exports = {
           if (user.rank != "Owner") return message.error("You cannot remove a gang, you must be a Owner of the gang or a Server Admin to do it so.");
         }
   
-        let confirm = await message.channel.send(`<:warning:724052384031965284> | Do you really wish to remove the **${gang.name}** gang? (yes/no)`);
+        let confirm = await message.channel.send(`:warning: | Do you really wish to remove the **${gang.name}** gang? (yes/no)`);
         confirm.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 60000, errors: ['time']}).then(c => {
           if (c.first().content.toLowerCase() == "yes" || c.first().content.toLowerCase() == "y") {
             (async () =>{
@@ -58,7 +58,7 @@ module.exports = {
                 let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE gangname = ?", ["", "None", null, null, gang.name]);
                 ret = await conn.query("DELETE FROM gangbot_gangs WHERE uuid = ?", [gang.uuid]);
                 message.success("The gang has been removed successfully.")
-                let role = message.guild.roles.cache.find(role => role.name === user.gangname);
+                let role = message.guild.roles.cache.find(role => role.name === user.gangname + " gang");
                 if (role) role.delete();
               } finally {
                 if (conn) conn.release(); //release to pool

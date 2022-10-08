@@ -19,7 +19,7 @@ module.exports = {
     })
 
     if (!serverid || !list.includes(args[0])) {
-      message.channel.send("<:cross:724049024943915209> | You didn't provide a true server id. The server id list has been sent to your direct messages.");
+      message.channel.send(":x: | You didn't provide a true server id. The server id list has been sent to your direct messages.");
       message.author.send(dmlist)
       return;
     }
@@ -34,7 +34,7 @@ module.exports = {
 
     if (!names.includes(args.join("-").toLowerCase())) {
       message.author.send(names)
-      return message.channel.send("<:cross:724049024943915209> | This channel doesn't exist. The channel name list is been sent on direct messages.")
+      return message.channel.send(":x: | This channel doesn't exist. The channel name list is been sent on direct messages.")
     } else {
       server.channels.cache.forEach(channel => {
         if (channel.name == args.join("-").toLowerCase()) channel.createInvite().then(code => {
