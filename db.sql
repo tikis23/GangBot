@@ -1,0 +1,29 @@
+CREATE TABLE `gangbot_gangs` (
+	`uuid` VARCHAR(50) NOT NULL DEFAULT '',
+	`name` TEXT NULL DEFAULT NULL,
+	`description` TEXT NULL DEFAULT NULL,
+	`ownertag` TEXT NULL DEFAULT NULL,
+	`owneravatar` TEXT NULL DEFAULT NULL,
+	`ownerid` TEXT NULL DEFAULT NULL,
+	`points` INT(10) NULL DEFAULT '0',
+	`banner` TEXT NULL DEFAULT NULL,
+	`color` VARCHAR(50) NULL DEFAULT NULL,
+	`role` TEXT NULL DEFAULT NULL,
+	`createdate` VARCHAR(50) NULL DEFAULT NULL
+)
+;
+CREATE TABLE `gangbot_members` (
+	`id` VARCHAR(50) NOT NULL DEFAULT '',
+	`tag` VARCHAR(50) NULL DEFAULT NULL,
+	`ganguuid` VARCHAR(50) NULL DEFAULT NULL,
+	`gangname` TEXT NULL DEFAULT NULL,
+	`rank` VARCHAR(50) NULL DEFAULT NULL,
+	`joindate` VARCHAR(50) NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE
+)
+;
+CREATE TABLE `gangbot_settings` (
+	`create_allow` VARCHAR(50) NULL DEFAULT NULL,
+	`create_roles` TEXT NULL DEFAULT NULL
+)
+;
