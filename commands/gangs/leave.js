@@ -43,6 +43,8 @@ module.exports = {
               conn = await pool.getConnection();
               let ret = await conn.query("INSERT INTO gangbot_members values (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, tag = ?, ganguuid = ?, gangname = ?, `rank` = ?, joindate = ?", [member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate, member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate]);
               message.success(`You left the **${gangName}**.`);
+              let role = message.guild.roles.cache.find(role => role.name === gangName);
+              if (role) message.member.roles.remove(role);
             } finally {
               if (conn) conn.release(); //release to pool
             }

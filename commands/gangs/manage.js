@@ -206,6 +206,8 @@ module.exports = {
                   target.joinDate = null;
                   let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE id = ?", [target.ganguuid, target.gangname, target.rank, target.joinDate, target.id]);
                   message.success(`User has been kicked from the Gang successfully.`)
+                  let role = message.guild.roles.cache.find(role => role.name === gang.name);
+                  if (role) message.mentions.members.first().roles.remove(role);
                 } finally {
                   if (conn) conn.release(); //release to pool
                 }

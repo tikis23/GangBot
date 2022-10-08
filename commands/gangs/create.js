@@ -135,6 +135,14 @@ module.exports = {
                     let ret = await conn.query("INSERT INTO gangbot_gangs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [newGang.uuid, newGang.name, newGang.description, newGang.owner.tag, newGang.owner.avatar, newGang.owner.id, newGang.points, newGang.banner, newGang.color, newGang.role, newGang.createdAt]);
                     ret = await conn.query("INSERT INTO gangbot_members values (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, tag = ?, ganguuid = ?, gangname = ?, `rank` = ?, joindate = ?", [member.id, member.tag, member.gang.uuid, member.gang.name, member.gang.rank, member.gang.joinDate, member.id, member.tag, member.gang.uuid, member.gang.name, member.gang.rank, member.gang.joinDate]);
 
+                    message.guild.roles.create({
+                      data: {
+                        name: newGang.name,
+                        color: newGang.color,
+                      },
+                      reason: 'GangBot role',
+                    }).then(role => {message.member.roles.add(role)}).catch(console.error);
+
                   } finally {
                     if (conn) conn.release(); //release to pool
                   }
@@ -285,6 +293,14 @@ module.exports = {
                     msg.delete().then(async () => msg = await message.channel.send(`Their gang has been created! Their followers now can use the \`g?join ${newGang.name}\` command to join their gang.`))
                     collector.stop()
 
+                    message.guild.roles.create({
+                      data: {
+                        name: newGang.name,
+                        color: newGang.color,
+                      },
+                      reason: 'GangBot role',
+                    }).then(role => {user.roles.add(role)}).catch(console.error);
+
                   } finally {
                     if (conn) conn.release(); //release to pool
                   }
@@ -427,6 +443,14 @@ module.exports = {
 
                     msg.delete().then(async () => msg = await message.channel.send(`Their gang has been created! Their followers now can use the \`g?join ${newGang.name}\` command to join their gang.`))
                     collector.stop()
+
+                    message.guild.roles.create({
+                      data: {
+                        name: newGang.name,
+                        color: newGang.color,
+                      },
+                      reason: 'GangBot role',
+                    }).then(role => {user.roles.add(role)}).catch(console.error);
 
                   } finally {
                     if (conn) conn.release(); //release to pool

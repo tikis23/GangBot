@@ -51,21 +51,15 @@ module.exports = {
         let confirm = await message.channel.send(`<:warning:724052384031965284> | Do you really wish to remove the **${gang.name}** gang? (yes/no)`);
         confirm.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 60000, errors: ['time']}).then(c => {
           if (c.first().content.toLowerCase() == "yes" || c.first().content.toLowerCase() == "y") {
-            member = {
-              id: gang.ownerid,
-              tag: gang.ownertag,
-              ganguuid: '',
-              gangname: "None",
-              rank: null,
-              joinDate: null
-            };
             (async () =>{
               try {
                 conn = await pool.getConnection();
 
-                let ret = await conn.query("INSERT INTO gangbot_members values (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, tag = ?, ganguuid = ?, gangname = ?, `rank` = ?, joindate = ?", [member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate, member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate]);
+                let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE gangname = ?", ["", "None", null, null, gang.name]);
                 ret = await conn.query("DELETE FROM gangbot_gangs WHERE uuid = ?", [gang.uuid]);
                 message.success("The gang has been removed successfully.")
+                let role = message.guild.roles.cache.find(role => role.name === user.gangname);
+                if (role) role.delete();
               } finally {
                 if (conn) conn.release(); //release to pool
               }
