@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const pool = require("../../db/guild.js");
+const config = require('../../config.json');
 
 module.exports = {
   name: "leave",
@@ -44,6 +45,8 @@ module.exports = {
               let ret = await conn.query("INSERT INTO gangbot_members values (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, tag = ?, ganguuid = ?, gangname = ?, `rank` = ?, joindate = ?", [member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate, member.id, member.tag, member.ganguuid, member.gangname, member.rank, member.joinDate]);
               message.success(`You left the **${gangName}**.`);
               let role = message.guild.roles.cache.find(role => role.name === gangName + " gang");
+              if (role) message.member.roles.remove(role);
+              role = message.guild.roles.cache.find(r => r.id === config.gangrole);
               if (role) message.member.roles.remove(role);
             } finally {
               if (conn) conn.release(); //release to pool

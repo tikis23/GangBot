@@ -1,6 +1,7 @@
 const Discord = require("discord.js");
 const pool = require("../../db/guild.js");
 const w3color = require("../../utility/w3color.js");
+const config = require('../../config.json');
 
 var expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
 var regex = new RegExp(expression);
@@ -214,6 +215,8 @@ module.exports = {
                   let ret = await conn.query("UPDATE gangbot_members SET ganguuid = ?, gangname = ?, `rank` = ?, joindate = ? WHERE id = ?", [target.ganguuid, target.gangname, target.rank, target.joinDate, target.id]);
                   message.success(`User has been kicked from the Gang successfully.`)
                   let role = message.guild.roles.cache.find(role => role.name === gang.name + " gang");
+                  if (role) message.mentions.members.first().roles.remove(role);
+                  role = message.guild.roles.cache.find(r => r.id === config.gangrole);
                   if (role) message.mentions.members.first().roles.remove(role);
                 } finally {
                   if (conn) conn.release(); //release to pool

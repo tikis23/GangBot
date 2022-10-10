@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const pool = require("../../db/guild.js");
 const find = require("../../utility/find.js");
 const w3color = require("../../utility/w3color.js");
+const config = require('../../config.json');
 const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
@@ -142,7 +143,8 @@ module.exports = {
                       },
                       reason: 'GangBot role',
                     }).then(role => {message.member.roles.add(role)}).catch(console.error);
-
+                    let role = message.guild.roles.cache.find(r => r.id === config.gangrole);
+                    if (role) message.member.roles.add(role);
                   } finally {
                     if (conn) conn.release(); //release to pool
                   }
@@ -300,6 +302,8 @@ module.exports = {
                       },
                       reason: 'GangBot role',
                     }).then(role => {user.roles.add(role)}).catch(console.error);
+                    let role = message.guild.roles.cache.find(r => r.id === config.gangrole);
+                    if (role) user.roles.add(role);
 
                   } finally {
                     if (conn) conn.release(); //release to pool
@@ -451,6 +455,8 @@ module.exports = {
                       },
                       reason: 'GangBot role',
                     }).then(role => {user.roles.add(role)}).catch(console.error);
+                    let role = message.guild.roles.cache.find(r => r.id === config.gangrole);
+                    if (role) user.roles.add(role);
 
                   } finally {
                     if (conn) conn.release(); //release to pool

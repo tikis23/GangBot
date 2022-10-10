@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const pool = require("../../db/guild.js");
+const config = require('../../config.json');
 
 module.exports = {
   name: "remove",
@@ -10,11 +11,12 @@ module.exports = {
   guildOnly: true,
   execute(bot, message, args) {
     (async () =>{
-      let conn, member, gangs;
+      let conn, member, members, gangs;
       try {
         conn = await pool.getConnection();
         member = await conn.query("SELECT * FROM gangbot_members WHERE id = ?", [message.author.id]);
         member = member[0];
+        members = await conn.query("SELECT * FROM gangbot_members");
         gangs = await conn.query("SELECT uuid, name, ownerid, ownertag FROM gangbot_gangs");
       } finally {
         if (conn) conn.release(); //release to pool
@@ -60,6 +62,17 @@ module.exports = {
                 message.success("The gang has been removed successfully.")
                 let role = message.guild.roles.cache.find(role => role.name === user.gangname + " gang");
                 if (role) role.delete();
+                role = message.guild.roles.cache.find(r => r.id === config.gangrole);
+                if (role) {
+                  members.forEach(m => {
+                    if (m.id) {
+                      let u = message.guild.members.cache.get(m.id);
+                      if (u) {
+                        u.roles.remove(role);
+                      }
+                    }
+                  });
+                }
               } finally {
                 if (conn) conn.release(); //release to pool
               }
