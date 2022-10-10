@@ -35,7 +35,7 @@ module.exports = {
         members.forEach(m => {
           if (m.gangname == gangName) {
             if (m.rank == "Member") {memberCount++;}
-            else if (m.rank == "Admin") adminList.push(`<@${a.id}>`)
+            else if (m.rank == "Admin") adminList.push(`<@${m.id}>`)
           }
         });
         let owner = (function(){
