@@ -16,6 +16,7 @@ module.exports = client => {
     ["gangs", "profile.js"],
     ["gangs", "remove.js"],
     ["gangs", "setcreator.js"],
+    ["gangs", "points.js"],
     ["general", "help.js"],
     ["general", "ping.js"]
   ];

@@ -15,7 +15,7 @@ module.exports = {
       try {
         conn = await pool.getConnection();
         members = await conn.query("SELECT ganguuid FROM gangbot_members");
-        gangs = await conn.query("SELECT name, uuid FROM gangbot_gangs");
+        gangs = await conn.query("SELECT name, uuid, points FROM gangbot_gangs");
       } finally {
         if (conn) conn.release(); //release to pool
 
@@ -33,7 +33,7 @@ module.exports = {
 
         let lb = [];
         for (let i = 0; i < count; i++) {
-          lb.push(`${i == 0 ? ':crown:' : (i === 1 ? ':second_place:' : (i === 2 ? ':third_place:': `${i + 1}.`))} **${top[i].gang.name}** | Members: ${top[i].members}`)
+          lb.push(`${i == 0 ? ':crown:' : (i === 1 ? ':second_place:' : (i === 2 ? ':third_place:': `${i + 1}.`))} **${top[i].gang.name}** | Points: ${top[i].points}`)
         }
 
         const listEmbed = new Discord.MessageEmbed()

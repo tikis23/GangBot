@@ -3,15 +3,12 @@ const pool = require("../../db/guild.js");
 const w3color = require("../../utility/w3color.js");
 const config = require('../../config.json');
 
-var expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
-var regex = new RegExp(expression);
-
 module.exports = {
   name: "manage",
   category: "Gangs",
   description: "Manages the Gang you own or moderate.",
   aliases: ["m"],
-  usage: "<name/description/color/banner/setadmin/removeadmin/kick/transferownership>",
+  usage: "<name/description/color/banner/setadmin/removeadmin/kick/invite/transferownership>",
   cooldown: 5,
   guildOnly: true,
   execute(bot, message, args) {
@@ -41,7 +38,7 @@ module.exports = {
         } else if (user.rank != "Owner" && user.rank != "Admin") {
           return message.error("You can't manage the Gang you're in or you're not in a Gang!");
         } else {
-          if (!args[0]) return message.error("You didn't provide a true option. `name, description, color, banner, setadmin, removeadmin, kick, invite, transferownership`")
+          if (!args[0]) return message.error("You didn't provide a valid option. `name, description, color, banner, setadmin, removeadmin, kick, invite, transferownership`")
           if (user.gangname != 'None' && !(function(){
             for (let i = 0; i < gangs.length; i++) {if (gangs[i].name === gangName) return true;}
             return false;})()) {
